@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Generate DIRECTP2P_SECRET_KEY pem key file
         run: echo "${{ secrets.DIRECTP2P_SECRET_KEY }}" > DIRECTP2P_SECRET_KEY.pem
       - name: Generate Github JWT
@@ -53,4 +53,3 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/repos/E2IDLE/DirectP2P/dispatches \
             -d '{"event_type":"submodule_updated"}'
-            
