@@ -53,5 +53,3 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/repos/E2IDLE/DirectP2P/dispatches \
             -d '{"event_type":"submodule_updated"}'
-
-            
