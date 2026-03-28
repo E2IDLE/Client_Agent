@@ -1,0 +1,902 @@
+openapi: "3.0.3"
+info:
+  title: "Direct P2P - Local Agent API"
+  description: |
+    Direct P2P 로컬 에이전트 API 명세서.
+    사용자 PC에서 실행되는 로컬 에이전트와 통신하기 위한 API입니다.
+    localhost(127.0.0.1)에만 바인딩되어 외부 접근이 차단됩니다.
+    세션 요청 시 토큰을 발급하여 다른 프로그램이 이 세션을 가로채지 못하도록 합니다.
+  version: "1.0.0"
+  contact:
+    name: "Direct P2P 개발팀"
+
+servers:
+  - url: "http://127.0.0.1:17432"
+    description: "로컬 에이전트 (localhost 전용)"
+
+tags:
+  - name: "상태"
+    description: "에이전트 상태 조회"
+  - name: "세션"
+    description: "P2P 세션 관리"
+  - name: "전송"
+    description: "파일 전송 진행 및 제어"
+  - name: "피어"
+    description: "연결된 피어 관리 및 데이터 전송"
+  - name: "로그"
+    description: "에이전트 로그 조회"
+
+paths:
+  /status:
+    get:
+      tags:
+        - "상태"
+      summary: "에이전트 상태 조회"
+      description: "로컬 에이전트의 현재 상태, NAT 타입, 연결 정보 등을 반환합니다."
+      operationId: "getAgentStatus"
+      responses:
+        "200":
+          description: "에이전트 상태 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStatusResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /session:
+    get:
+      tags:
+        - "세션"
+      summary: "현재 세션 정보 조회"
+      description: "현재 활성 세션의 상세 정보를 반환합니다. 활성 세션이 없으면 에러를 반환합니다."
+      operationId: "getSessionInfo"
+      responses:
+        "200":
+          description: "세션 정보 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionInfo"
+        "404":
+          description: "활성 세션 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /session/start:
+    post:
+      tags:
+        - "세션"
+      summary: "새 세션 시작 (송신자)"
+      description: |
+        송신자가 새로운 P2P 세션을 시작합니다.
+      operationId: "startSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StartSessionRequest"
+      responses:
+        "201":
+          description: "세션 생성 및 초대 코드 발급 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StartSessionResponse"
+        "400":
+          description: "잘못된 요청 (파일 목록 누락 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 활성 세션이 존재함"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /session/join:
+    post:
+      tags:
+        - "세션"
+      summary: "세션 참여 (수신자)"
+      description: |
+        수신자가 초대 코드를 사용하여 기존 세션에 참여합니다.
+        API Server 인증 토큰을 함께 전달합니다.
+      operationId: "joinSession"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/JoinSessionRequest"
+      responses:
+        "200":
+          description: "세션 참여 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JoinSessionResponse"
+        "400":
+          description: "잘못된 요청 (초대 코드 누락 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "유효하지 않은 초대 코드"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 활성 세션이 존재함"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transfer/progress:
+    get:
+      tags:
+        - "전송"
+      summary: "전송 진행 상황 조회"
+      description: "현재 파일 전송의 진행 상황을 파일별 상세 정보와 함께 반환합니다."
+      operationId: "getTransferProgress"
+      responses:
+        "200":
+          description: "전송 진행 상황 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferProgress"
+        "404":
+          description: "진행 중인 전송 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /transfer/cancel:
+    post:
+      tags:
+        - "전송"
+      summary: "전송 취소"
+      description: "현재 진행 중인 파일 전송을 취소합니다. 이미 전송된 바이트 수를 반환합니다."
+      operationId: "cancelTransfer"
+      responses:
+        "200":
+          description: "전송 취소 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelTransferResponse"
+        "404":
+          description: "진행 중인 전송 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /peers:
+    get:
+      tags:
+        - "피어"
+      summary: "연결된 피어 목록 조회"
+      description: "현재 연결된 또는 최근 연결되었던 피어 목록을 반환합니다."
+      operationId: "getPeers"
+      responses:
+        "200":
+          description: "피어 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PeerInfo"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /peers/{peerId}:
+    post:
+      tags:
+        - "피어"
+      summary: "특정 피어에게 파일 전송"
+      description: "지정된 피어에게 파일 전송을 시작합니다. 전송 ID가 발급됩니다."
+      operationId: "sendDataToPeer"
+      parameters:
+        - name: peerId
+          in: path
+          required: true
+          description: "대상 피어 ID"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendDataRequest"
+      responses:
+        "202":
+          description: "전송 요청 수락됨"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendDataResponse"
+        "400":
+          description: "잘못된 요청 (파일 목록 누락 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "해당 피어를 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 전송이 진행 중임"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /logs:
+    get:
+      tags:
+        - "로그"
+      summary: "에이전트 로그 조회"
+      description: "에이전트의 동작 로그를 필터링 조건에 따라 조회합니다."
+      operationId: "getLogs"
+      parameters:
+        - name: level
+          in: query
+          required: false
+          description: "로그 레벨 필터"
+          schema:
+            type: string
+            enum:
+              - debug
+              - info
+              - warn
+              - error
+        - name: limit
+          in: query
+          required: false
+          description: "조회할 로그 수 (기본값: 100)"
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+        - name: offset
+          in: query
+          required: false
+          description: "건너뛸 로그 수 (기본값: 0)"
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: since
+          in: query
+          required: false
+          description: "이 시각 이후의 로그만 조회 (ISO 8601 형식)"
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: "로그 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogResponse"
+        "400":
+          description: "잘못된 쿼리 파라미터"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    # ──────────────────────────────────────────────
+    # 1. AgentStatusResponse — GET /status 응답
+    # ──────────────────────────────────────────────
+    AgentStatusResponse:
+      type: object
+      description: "에이전트 상태 정보"
+      required:
+        - agentVersion
+        - status
+        - uptime
+        - accountLinked
+        - apiServerConnected
+      properties:
+        agentVersion:
+          type: string
+          description: "에이전트 버전"
+          example: "1.0.0"
+        status:
+          type: string
+          description: "에이전트 현재 상태"
+          enum:
+            - idle
+            - connecting
+            - connected
+            - transferring
+            - error
+        uptime:
+          type: integer
+          description: "에이전트 실행 시간 (초)"
+          example: 3600
+        publicIp:
+          type: string
+          nullable: true
+          description: "STUN으로 감지된 공인 IP"
+          example: "203.0.113.45"
+        publicPort:
+          type: integer
+          nullable: true
+          description: "STUN으로 감지된 공인 포트"
+          example: 12345
+        natType:
+          type: string
+          nullable: true
+          description: "감지된 NAT 타입"
+          enum:
+            - full_cone
+            - restricted_cone
+            - port_restricted_cone
+            - symmetric
+            - unknown
+        connectedPeer:
+          type: object
+          nullable: true
+          description: "현재 연결된 피어 정보 (미연결 시 null)"
+          properties:
+            peerId:
+              type: string
+              description: "피어 ID"
+            nickname:
+              type: string
+              description: "피어 닉네임"
+            connectionType:
+              type: string
+              description: "연결 유형"
+              enum:
+                - p2p
+                - relay
+            rtt:
+              type: integer
+              description: "왕복 지연 시간 (밀리초)"
+        accountLinked:
+          type: boolean
+          description: "계정 연동 여부"
+        apiServerConnected:
+          type: boolean
+          description: "API Server 연결 상태"
+
+    # ──────────────────────────────────────────────
+    # 2. SessionInfo — GET /session 응답
+    # ──────────────────────────────────────────────
+    SessionInfo:
+      type: object
+      description: "현재 활성 세션 정보"
+      required:
+        - sessionId
+        - inviteCode
+        - status
+        - role
+        - createdAt
+      properties:
+        sessionId:
+          type: string
+          description: "세션 고유 ID"
+          example: "sess_abc123"
+        inviteCode:
+          type: string
+          description: "세션 초대 코드"
+          example: "ABCD-1234"
+        status:
+          type: string
+          description: "세션 상태"
+          enum:
+            - waiting
+            - connecting
+            - connected
+            - transferring
+            - completed
+            - error
+        role:
+          type: string
+          description: "세션 내 역할"
+          enum:
+            - sender
+            - receiver
+        peerNickname:
+          type: string
+          nullable: true
+          description: "상대 피어 닉네임 (미연결 시 null)"
+          example: "홍길동"
+        connectionType:
+          type: string
+          nullable: true
+          description: "연결 유형 (미연결 시 null)"
+          enum:
+            - p2p
+            - relay
+        createdAt:
+          type: string
+          format: date-time
+          description: "세션 생성 시각 (ISO 8601)"
+
+    # ──────────────────────────────────────────────
+    # 3. StartSessionRequest — POST /session/start 요청
+    # ──────────────────────────────────────────────
+    StartSessionRequest:
+      type: object
+      description: "세션 시작 요청 (송신자)"
+      required:
+        - targetUser
+      properties:
+        targetUser:
+          type: string
+          description: "P2P 연결할 상대방 퍼블릭 ip:port"
+
+    # ──────────────────────────────────────────────
+    # 4. StartSessionResponse — POST /session/start 응답
+    # ──────────────────────────────────────────────
+    StartSessionResponse:
+      type: object
+      description: "세션 시작 응답"
+      required:
+        - sessionId
+      properties:
+        sessionId:
+          type: string
+          description: "생성된 세션 ID"
+          example: "sess_abc123"
+
+    # ──────────────────────────────────────────────
+    # 5. FileInfo — StartSessionRequest, SendDataRequest에서 재사용
+    # ──────────────────────────────────────────────
+    FileInfo:
+      type: object
+      description: "전송 대상 파일 정보"
+      required:
+        - name
+        - path
+        - size
+      properties:
+        name:
+          type: string
+          description: "파일 이름"
+          example: "document.pdf"
+        path:
+          type: string
+          description: "파일 로컬 경로"
+          example: "/home/user/documents/document.pdf"
+        size:
+          type: integer
+          format: int64
+          description: "파일 크기 (바이트)"
+          example: 1048576
+        mimeType:
+          type: string
+          description: "파일 MIME 타입"
+          example: "application/pdf"
+
+    # ──────────────────────────────────────────────
+    # 6. JoinSessionRequest — POST /session/join 요청
+    # ──────────────────────────────────────────────
+    JoinSessionRequest:
+      type: object
+      description: "세션 참여 요청 (수신자)"
+      required:
+        - apiToken
+        - inviteCode
+      properties:
+        apiToken:
+          type: string
+          description: "API Server 인증 토큰"
+        inviteCode:
+          type: string
+          description: "세션 초대 코드"
+          example: "ABCD-1234"
+
+    # ──────────────────────────────────────────────
+    # 7. JoinSessionResponse — POST /session/join 응답
+    # ──────────────────────────────────────────────
+    JoinSessionResponse:
+      type: object
+      description: "세션 참여 응답"
+      required:
+        - sessionId
+        - peerNickname
+      properties:
+        sessionId:
+          type: string
+          description: "참여한 세션 ID"
+          example: "sess_abc123"
+        peerNickname:
+          type: string
+          description: "상대 피어(송신자) 닉네임"
+          example: "홍길동"
+
+    # ──────────────────────────────────────────────
+    # 8. TransferProgress — GET /transfer/progress 응답
+    # ──────────────────────────────────────────────
+    TransferProgress:
+      type: object
+      description: "파일 전송 진행 상황"
+      required:
+        - status
+        - files
+        - totalSize
+        - totalTransferred
+        - totalProgress
+        - currentSpeed
+        - averageSpeed
+      properties:
+        status:
+          type: string
+          description: "전송 상태"
+          enum:
+            - preparing
+            - transferring
+            - completed
+            - failed
+            - cancelled
+        files:
+          type: array
+          description: "파일별 전송 진행 상황"
+          items:
+            type: object
+            description: "개별 파일 전송 진행 정보"
+            required:
+              - name
+              - size
+              - transferredBytes
+              - progress
+              - speed
+            properties:
+              name:
+                type: string
+                description: "파일 이름"
+                example: "document.pdf"
+              size:
+                type: integer
+                format: int64
+                description: "파일 전체 크기 (바이트)"
+                example: 1048576
+              transferredBytes:
+                type: integer
+                format: int64
+                description: "전송 완료된 바이트 수"
+                example: 524288
+              progress:
+                type: number
+                format: double
+                description: "전송 진행률 (0∼100)"
+                minimum: 0
+                maximum: 100
+                example: 50.0
+              speed:
+                type: integer
+                description: "현재 전송 속도 (바이트/초)"
+                example: 1048576
+        totalSize:
+          type: integer
+          format: int64
+          description: "전체 파일 총 크기 (바이트)"
+          example: 10485760
+        totalTransferred:
+          type: integer
+          format: int64
+          description: "전체 전송 완료된 바이트 수"
+          example: 5242880
+        totalProgress:
+          type: number
+          format: double
+          description: "전체 전송 진행률 (0∼100)"
+          minimum: 0
+          maximum: 100
+          example: 50.0
+        currentSpeed:
+          type: integer
+          description: "현재 전송 속도 (바이트/초)"
+          example: 2097152
+        averageSpeed:
+          type: integer
+          description: "평균 전송 속도 (바이트/초)"
+          example: 1572864
+        eta:
+          type: integer
+          nullable: true
+          description: "예상 남은 시간 (초, 산출 불가 시 null)"
+          example: 120
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "전송 시작 시각 (ISO 8601, 미시작 시 null)"
+
+    # ──────────────────────────────────────────────
+    # 9. CancelTransferResponse — POST /transfer/cancel 응답
+    # ──────────────────────────────────────────────
+    CancelTransferResponse:
+      type: object
+      description: "전송 취소 응답"
+      required:
+        - cancelled
+        - transferredBytes
+      properties:
+        cancelled:
+          type: boolean
+          description: "취소 성공 여부"
+          example: true
+        transferredBytes:
+          type: integer
+          format: int64
+          description: "취소 시점까지 전송된 바이트 수"
+          example: 5242880
+
+    # ──────────────────────────────────────────────
+    # 10. PeerInfo — GET /peers 응답 배열 항목
+    # ──────────────────────────────────────────────
+    PeerInfo:
+      type: object
+      description: "피어 정보"
+      required:
+        - peerId
+        - nickname
+        - connectionType
+        - status
+      properties:
+        peerId:
+          type: string
+          description: "피어 고유 ID"
+          example: "peer_xyz789"
+        nickname:
+          type: string
+          description: "피어 닉네임"
+          example: "홍길동"
+        connectionType:
+          type: string
+          description: "연결 유형"
+          enum:
+            - p2p
+            - relay
+        status:
+          type: string
+          description: "피어 연결 상태"
+          enum:
+            - connected
+            - disconnected
+        rtt:
+          type: integer
+          nullable: true
+          description: "왕복 지연 시간 (밀리초, 미측정 시 null)"
+          example: 15
+        packetLoss:
+          type: number
+          format: double
+          nullable: true
+          description: "패킷 손실률 (0∼100, 미측정 시 null)"
+          minimum: 0
+          maximum: 100
+          example: 0.5
+        publicIp:
+          type: string
+          nullable: true
+          description: "피어의 공인 IP (알 수 없으면 null)"
+          example: "198.51.100.22"
+        publicPort:
+          type: integer
+          nullable: true
+          description: "피어의 공인 포트 (알 수 없으면 null)"
+          example: 54321
+
+    # ──────────────────────────────────────────────
+    # 11. SendDataRequest — POST /peers/{peerId} 요청
+    # ──────────────────────────────────────────────
+    SendDataRequest:
+      type: object
+      description: "특정 피어에게 파일 전송 요청"
+      required:
+        - files
+      properties:
+        files:
+          type: array
+          description: "전송할 파일 목록"
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/FileInfo"
+
+    # ──────────────────────────────────────────────
+    # 12. SendDataResponse — POST /peers/{peerId} 응답
+    # ──────────────────────────────────────────────
+    SendDataResponse:
+      type: object
+      description: "파일 전송 요청 수락 응답"
+      required:
+        - transferId
+        - message
+      properties:
+        transferId:
+          type: string
+          description: "발급된 전송 ID"
+          example: "txn_def456"
+        message:
+          type: string
+          description: "응답 메시지"
+          example: "전송 요청이 수락되었습니다."
+
+    # ──────────────────────────────────────────────
+    # 13. LogResponse — GET /logs 응답
+    # ──────────────────────────────────────────────
+    LogResponse:
+      type: object
+      description: "에이전트 로그 조회 응답"
+      required:
+        - logs
+        - totalCount
+      properties:
+        logs:
+          type: array
+          description: "로그 항목 목록"
+          items:
+            type: object
+            description: "개별 로그 항목"
+            required:
+              - timestamp
+              - level
+              - category
+              - message
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+                description: "로그 발생 시각 (ISO 8601)"
+              level:
+                type: string
+                description: "로그 레벨"
+                enum:
+                  - debug
+                  - info
+                  - warn
+                  - error
+              category:
+                type: string
+                description: "로그 카테고리"
+                enum:
+                  - stun
+                  - holepunch
+                  - turn
+                  - transfer
+                  - agent
+                  - connection
+              message:
+                type: string
+                description: "로그 메시지"
+                example: "STUN 서버로부터 공인 IP를 획득했습니다."
+              detail:
+                type: string
+                nullable: true
+                description: "추가 상세 정보 (없으면 null)"
+        totalCount:
+          type: integer
+          description: "필터 조건에 해당하는 전체 로그 수"
+          example: 250
+
+    # ──────────────────────────────────────────────
+    # 14. ErrorResponse — 모든 에러 응답
+    # ──────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      description: "에러 응답"
+      required:
+        - code
+        - message
+      properties:
+        code:
+          $ref: "#/components/schemas/ErrorCode"
+        message:
+          type: string
+          description: "에러 메시지"
+          example: "세션을 찾을 수 없습니다."
+        detail:
+          type: string
+          nullable: true
+          description: "에러 상세 정보 (없으면 null)"
+          example: "sessionId: sess_abc123에 해당하는 세션이 존재하지 않습니다."
+
+    # ──────────────────────────────────────────────
+    # 15. ErrorCode — ErrorResponse에서 $ref 참조
+    # ──────────────────────────────────────────────
+    ErrorCode:
+      type: string
+      description: |
+        에러 코드 목록:
+        - E1001: 잘못된 요청 파라미터
+        - E1002: 필수 필드 누락
+        - E2001: 세션을 찾을 수 없음
+        - E2002: 세션이 이미 존재함 (중복 생성 시도)
+        - E3001: 피어를 찾을 수 없음
+        - E3002: 피어 연결 실패
+        - E4001: 전송 초기화 실패
+        - E4002: 전송 중 오류 발생
+        - E4003: 전송이 이미 진행 중
+        - E5001: NAT 탐지 실패
+        - E5002: 홀펀칭 실패
+        - E6001: 에이전트 내부 오류
+      enum:
+        - E1001
+        - E1002
+        - E2001
+        - E2002
+        - E3001
+        - E3002
+        - E4001
+        - E4002
+        - E4003
+        - E5001
+        - E5002
+        - E6001
