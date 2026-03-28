@@ -15,7 +15,9 @@ jobs:
       - name: Generate Github JWT
         # This script will set GITHUB_JWT environment variable
         # APP_ID=3210791
-        run: .github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
+        run: |
+          chmod +x ./.github/scripts/GenerateGithubJWT.sh
+          ./.github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
         shell: bash
       - name: Get organization installation
         id: install_raw
