@@ -8,12 +8,14 @@ jobs:
   notify-parent:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Generate DIRECTP2P_SECRET_KEY pem key file
         run: echo "${{ secrets.DIRECTP2P_SECRET_KEY }}" > DIRECTP2P_SECRET_KEY.pem
       - name: Generate Github JWT
         # This script will set GITHUB_JWT environment variable
         # APP_ID=3210791
-        run: ./.github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
+        run: .github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
         shell: bash
       - name: Get organization installation
         id: install_raw
