@@ -55,6 +55,6 @@ jobs:
             -d '{
             "event_type":"submodule_updated",
               "client_payload": {
-                "branch": "${GITHUB_REF_NAME}"
+                "branch": "${{ github.ref_name }}"
               }
             }'
