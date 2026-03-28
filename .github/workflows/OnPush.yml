@@ -28,7 +28,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/orgs/E2IDLE/installation)
 
-          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+          echo "json="$RESPONSE"" >> $GITHUB_OUTPUT
       - name: Extract installation id
         id: install
         run: echo "id=${{ fromJson(steps.install_raw.outputs.json).id }}" >> $GITHUB_OUTPUT
@@ -41,7 +41,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/app/installations/${{ steps.install.outputs.id }}/access_tokens)
 
-          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+          echo "json="$RESPONSE"" >> $GITHUB_OUTPUT
       - name: Extract token
         id: token
         run: echo "INSTALLATION_TOKEN=${{ fromJson(steps.token_raw.outputs.json).token }}" >> $GITHUB_ENV
