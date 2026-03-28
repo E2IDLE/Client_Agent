@@ -1,0 +1,51 @@
+name: OnPush
+
+on:
+  push:
+    branches: [ master release ]
+
+jobs:
+  notify-parent:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate DIRECTP2P_SECRET_KEY pem key file
+        run: echo "${{ secrets.DIRECTP2P_SECRET_KEY }}" > DIRECTP2P_SECRET_KEY.pem
+      - name: Generate Github JWT
+        # This script will set GITHUB_JWT environment variable
+        # APP_ID=3210791
+        run: ./.github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
+        shell: bash
+      - name: Get organization installation
+        id: install_raw
+        run: |
+          RESPONSE=$(curl -s -L \
+            -H "Accept: application/vnd.github+json" \
+            -H "Authorization: Bearer $GITHUB_JWT" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            https://api.github.com/orgs/E2IDLE/installation)
+
+          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+      - name: Extract installation id
+        id: install
+        run: echo "id=${{ fromJson(steps.install_raw.outputs.json).id }}" >> $GITHUB_OUTPUT
+      - name: Get installation token
+        id: token_raw
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_JWT" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            https://api.github.com/app/installations/${{ steps.install.outputs.id }}/access_tokens)
+
+          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+      - name: Extract token
+        id: token
+        run: echo "INSTALLATION_TOKEN=${{ fromJson(steps.token_raw.outputs.json).token }}" >> $GITHUB_ENV
+      - name: Trigger parent repo
+        run: |
+          curl -X POST \
+            -H "Authorization: Bearer $INSTALLATION_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2026-03-10" \
+            https://api.github.com/repos/E2IDLE/DirectP2P/dispatches \
+            -d '{"event_type":"submodule_updated"}'
