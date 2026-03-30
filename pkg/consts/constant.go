@@ -5,6 +5,8 @@ import "time"
 type ContextKey string
 
 const (
+	ReleaseMode = false
+
 	AuthorizationCookieName = "authorization"
 	AuthorizationHeader     = "Authorization"
 	CookieMaxAge            = 60 * 60 * 8
