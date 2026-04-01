@@ -2,8 +2,7 @@ name: PerformTest
 
 on:
   push:
-    branches: [ master, release ]
-
+    branches: [ master, develop, release ]
 
 jobs:
   tests:
@@ -27,6 +26,8 @@ jobs:
             done
             echo "The server is not showing up.."
             exit 1
+      
+      # Tests are able to performed at this point
       - name: /status GET test
         run: |
             STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:17432/status)
