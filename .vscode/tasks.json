@@ -10,6 +10,9 @@
                 "-o",
                 "build/",
                 "cmd/client/main.go"
+            ],
+            "problemMatcher": [
+                "$go"
             ]
         }
     ]

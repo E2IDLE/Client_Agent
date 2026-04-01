@@ -1,9 +1,9 @@
 package middleware
 
 import (
+	"Client_Agent/pkg/consts"
+	"Client_Agent/pkg/util"
 	"bytes"
-	"directp2p_client_agent/pkg/consts"
-	"directp2p_client_agent/pkg/util"
 	"io"
 	"strings"
 	"time"
