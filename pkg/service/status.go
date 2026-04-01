@@ -24,12 +24,3 @@ func (h *StatusService) GetStatus() dtos.AgentStatusResponse {
 		ConnectedPeer: h.Sessions.Status.ConnectedPeer,
 	}
 }
-
-func (h *StatusService) TryHolePunch(token string) error {
-	// TargetUserAddr, ok := h.sessions.Lookup(token)
-	// if !ok {
-	// 	return
-	// }
-
-	return nil
-}

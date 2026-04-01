@@ -1,6 +1,7 @@
 package session
 
 import (
+	"Client_Agent/pkg/consts"
 	"Client_Agent/pkg/dtos"
 	"fmt"
 	"log"
@@ -25,7 +26,7 @@ type AgentStatus struct {
 
 type Store struct {
 	Status AgentStatus
-	host   host.Host
+	Host   host.Host
 }
 
 // getPublicAddrViaSTUN은 STUN 서버를 통해 공인 IP와 Port를 가져옵니다.
@@ -67,7 +68,7 @@ func buildMultiAddress(ip string, port int, peerID peer.ID) (string, error) {
 		prefix = "/ip6"
 	}
 
-	maStr := fmt.Sprintf("%s/%s/tcp/%d/p2p/%s", prefix, ip, port, peerID.String())
+	maStr := fmt.Sprintf("%s/%s/udp/%d/quic-v1/p2p/%s", prefix, ip, port, peerID.String())
 
 	// 유효한 multiaddr인지 검증
 	if _, err := multiaddr.NewMultiaddr(maStr); err != nil {
@@ -95,7 +96,7 @@ func initMultiAddress(peerID peer.ID) (string, error) {
 func NewStore() *Store {
 	// ── 1. libp2p 호스트 생성 (PeerID 자동 생성) ─────────────────────────────
 	h, err := libp2p.New(
-		libp2p.ListenAddrStrings("/ip4/0.0.0.0/tcp/0"),
+		libp2p.ListenAddrStrings("/ip4/0.0.0.0/udp/0/quic-v1"),
 		libp2p.EnableHolePunching(),
 	)
 	if err != nil {
@@ -119,13 +120,13 @@ func NewStore() *Store {
 	return &Store{
 		Status: AgentStatus{
 			AgentName:     "",
-			AgentVersion:  "",
+			AgentVersion:  consts.Version,
 			Status:        "",
 			Uptime:        "",
 			MultiAddress:  multiAddress,
 			NATType:       "",
 			ConnectedPeer: []dtos.Peer{{Nickname: "", Address: "", ConnectionType: "", RTT: 0}},
 		},
-		host: h,
+		Host: h,
 	}
 }
