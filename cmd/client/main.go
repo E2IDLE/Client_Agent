@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	defaultServerPort = ":8080"
+	defaultServerPort = ":17432"
 )
 
 func main() {
