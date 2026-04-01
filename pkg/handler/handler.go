@@ -1,10 +1,10 @@
 package handler
 
 import (
-	"directp2p_client_agent/pkg/handler/auth"
-	"directp2p_client_agent/pkg/middleware"
-	"directp2p_client_agent/pkg/service"
-	"directp2p_client_agent/pkg/session"
+	"Client_Agent/pkg/handler/status"
+	"Client_Agent/pkg/middleware"
+	"Client_Agent/pkg/service"
+	"Client_Agent/pkg/session"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,10 +21,7 @@ func SetupRouter(sessions *session.Store) *gin.Engine {
 }
 
 func registerAPIRoutes(router *gin.Engine, sessions *session.Store) {
-	p2pSvc := service.NewP2PService(sessions)
-	p2pH := auth.NewP2PHandler(p2pSvc)
-	p2pH.RegisterRoutes(&router.RouterGroup)
-
-	protected := router.Group("")
-	protected.Use(middleware.AuthRequired(sessions))
+	statusSvc := service.NewStatusService(sessions)
+	statusH := status.NewStatusHandler(statusSvc)
+	statusH.RegisterRoutes(&router.RouterGroup)
 }
