@@ -1,0 +1,45 @@
+name: PerformTest
+
+on:
+  push:
+    branches: [ master, release ]
+
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Build
+        run: go build -o build/ cmd/client/main.go
+      - name: Run binary
+        run: build/main &
+      - name: Wait for server
+        run: |
+            for i in {1..10}; do
+            if curl -s http://localhost:17432/status > /dev/null; then
+                echo "Server is up"
+                exit 0
+            fi
+            echo "Waiting..."
+            sleep 1
+            done
+            echo "The server is not showing up.."
+            exit 1
+      - name: /status GET test
+        run: |
+            STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" http://localhost:17432/status)
+            
+            if [ "$STATUS" -ne 200 ]; then
+                echo "에러 발생: $STATUS"
+                exit 1
+            fi
+      - name: /status PATCH test
+        run: |
+            STATUS=$(curl --location --request PATCH 'http://localhost:17432/status' --header 'Content-Type: application/json' --data '{"name":"name"}' -o /dev/null -s -w "%{http_code}\n")
+            
+            if [ "$STATUS" -ne 200 ]; then
+                echo "에러 발생: $STATUS"
+                exit 1
+            fi
