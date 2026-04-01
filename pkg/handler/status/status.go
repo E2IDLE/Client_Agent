@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PathStatus = "/api/posts"
+	PathStatus = "/status"
 )
 
 type StatusHandler struct {
