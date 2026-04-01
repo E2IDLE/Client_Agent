@@ -1,4 +1,4 @@
-name: OnPush
+name: OnMasterReleasePush
 
 on:
   push:
