@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	PathStatus = "/api/posts"
+	PathStatus = "/status"
 )
 
 type StatusHandler struct {
@@ -20,5 +20,5 @@ func NewStatusHandler(svc *service.StatusService) *StatusHandler {
 
 func (h *StatusHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET(PathStatus, h.Get)
-	rg.POST(PathStatus, h.Post)
+	rg.PATCH(PathStatus, h.Patch)
 }

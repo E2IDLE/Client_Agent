@@ -4,6 +4,7 @@ import (
 	"Client_Agent/pkg/consts"
 	"Client_Agent/pkg/handler"
 	"Client_Agent/pkg/session"
+	"Client_Agent/pkg/util"
 
 	"github.com/gin-gonic/gin"
 )
@@ -13,6 +14,8 @@ const (
 )
 
 func main() {
+	util.SetDefaultLogger()
+
 	if consts.ReleaseMode {
 		gin.SetMode(gin.ReleaseMode)
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (h *StatusHandler) Post(c *gin.Context) {
+func (h *StatusHandler) Patch(c *gin.Context) {
 	var patchAgentStatusRequest dtos.PatchAgentStatusRequest
 	if err := c.ShouldBindJSON(&patchAgentStatusRequest); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -20,4 +20,6 @@ func (h *StatusHandler) Post(c *gin.Context) {
 	}
 
 	h.service.Sessions.Status.AgentName = patchAgentStatusRequest.Name
+
+	c.JSON(http.StatusOK, h.service.Sessions.Status)
 }
