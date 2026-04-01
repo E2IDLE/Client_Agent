@@ -45,6 +45,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - "상태"
+      summary: "에이전트 상태 수정"
+      description: "에이전트 이름 등을 수정합니다."
+      operationId: "patchAgentStatus"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchAgentStatusRequest"
+      responses:
+        "200":
+          description: "에이전트 상태 수정 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentStatusResponse"
+        "400":
+          description: "요청이 부적절함"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /transfer/progress:
     get:
@@ -351,112 +382,40 @@ components:
             - symmetric
             - unknown
         connectedPeer:
-          type: object
+          type: array
           nullable: true
-          description: "현재 연결된 피어 정보 (미연결 시 null)"
-          properties:
-            peerId:
-              type: string
-              description: "피어 ID"
-            nickname:
-              type: string
-              description: "피어 닉네임"
-            connectionType:
-              type: string
-              description: "연결 유형"
-              enum:
-                - p2p
-                - relay
-            rtt:
-              type: integer
-              description: "왕복 지연 시간 (밀리초)"
-        accountLinked:
-          type: boolean
-          description: "계정 연동 여부"
-        apiServerConnected:
-          type: boolean
-          description: "API Server 연결 상태"
+          description: "현재 연결된 피어 정보 목록 (미연결 시 null)"
+          items:
+            type: object
+            properties:
+              nickname:
+                type: string
+                description: "피어 닉네임"
+              address:
+                type: string
+                description: "피어 multi address"
+              connectionType:
+                type: string
+                description: "연결 유형"
+                enum:
+                  - p2p
+                  - relay
+              rtt:
+                type: integer
+                description: "왕복 지연 시간 (밀리초)"
 
     # ──────────────────────────────────────────────
-    # 2. SessionInfo — GET /session 응답
+    # 3. PatchAgentStatusRequest — PATCH /status 요청
     # ──────────────────────────────────────────────
-    SessionInfo:
+    PatchAgentStatusRequest:
       type: object
-      description: "현재 활성 세션 정보"
+      description: "에이전트 수정 요청"
       required:
-        - sessionId
-        - inviteCode
-        - status
-        - role
-        - createdAt
+        - name
       properties:
-        sessionId:
+        name:
           type: string
-          description: "세션 고유 ID"
-          example: "sess_abc123"
-        inviteCode:
-          type: string
-          description: "세션 초대 코드"
-          example: "ABCD-1234"
-        status:
-          type: string
-          description: "세션 상태"
-          enum:
-            - waiting
-            - connecting
-            - connected
-            - transferring
-            - completed
-            - error
-        role:
-          type: string
-          description: "세션 내 역할"
-          enum:
-            - sender
-            - receiver
-        peerNickname:
-          type: string
-          nullable: true
-          description: "상대 피어 닉네임 (미연결 시 null)"
-          example: "홍길동"
-        connectionType:
-          type: string
-          nullable: true
-          description: "연결 유형 (미연결 시 null)"
-          enum:
-            - p2p
-            - relay
-        createdAt:
-          type: string
-          format: date-time
-          description: "세션 생성 시각 (ISO 8601)"
-
-    # ──────────────────────────────────────────────
-    # 3. StartSessionRequest — POST /session/start 요청
-    # ──────────────────────────────────────────────
-    StartSessionRequest:
-      type: object
-      description: "세션 시작 요청 (송신자)"
-      required:
-        - targetUser
-      properties:
-        targetUser:
-          type: string
-          description: "P2P 연결할 상대방 퍼블릭 ip:port"
-
-    # ──────────────────────────────────────────────
-    # 4. StartSessionResponse — POST /session/start 응답
-    # ──────────────────────────────────────────────
-    StartSessionResponse:
-      type: object
-      description: "세션 시작 응답"
-      required:
-        - sessionId
-      properties:
-        sessionId:
-          type: string
-          description: "생성된 세션 ID"
-          example: "sess_abc123"
+          description: "이름"
 
     # ──────────────────────────────────────────────
     # 5. FileInfo — StartSessionRequest, SendDataRequest에서 재사용
@@ -486,43 +445,6 @@ components:
           type: string
           description: "파일 MIME 타입"
           example: "application/pdf"
-
-    # ──────────────────────────────────────────────
-    # 6. JoinSessionRequest — POST /session/join 요청
-    # ──────────────────────────────────────────────
-    JoinSessionRequest:
-      type: object
-      description: "세션 참여 요청 (수신자)"
-      required:
-        - apiToken
-        - inviteCode
-      properties:
-        apiToken:
-          type: string
-          description: "API Server 인증 토큰"
-        inviteCode:
-          type: string
-          description: "세션 초대 코드"
-          example: "ABCD-1234"
-
-    # ──────────────────────────────────────────────
-    # 7. JoinSessionResponse — POST /session/join 응답
-    # ──────────────────────────────────────────────
-    JoinSessionResponse:
-      type: object
-      description: "세션 참여 응답"
-      required:
-        - sessionId
-        - peerNickname
-      properties:
-        sessionId:
-          type: string
-          description: "참여한 세션 ID"
-          example: "sess_abc123"
-        peerNickname:
-          type: string
-          description: "상대 피어(송신자) 닉네임"
-          example: "홍길동"
 
     # ──────────────────────────────────────────────
     # 8. TransferProgress — GET /transfer/progress 응답
