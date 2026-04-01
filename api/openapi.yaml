@@ -188,6 +188,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      tags:
+        - "전송"
+      summary: "전송 상태 수정"
+      description: "현재 파일 전송의 진행 상황을 파일별 상세 정보와 함께 반환합니다."
+      operationId: "patchTransferProgress"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatchTransferRequest"
+      responses:
+        "200":
+          description: "전송 진행 상황 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransferProgress"
+        "404":
+          description: "진행 중인 전송 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 
   /transfer/cancel:
     post:
@@ -238,6 +270,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+    post:
+      tags:
+        - "피어"
+      summary: "대상 피어와 연결하기"
+      description: "대상 피어와 연결을 시도합니다"
+      operationId: "postPeers"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PostPeersRequest"
+      responses:
+        "200":
+          description: "피어 목록 조회 성공"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PeerInfo"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+
 
   /peers/{peerId}:
     post:
@@ -369,6 +430,10 @@ components:
         - accountLinked
         - apiServerConnected
       properties:
+        agentName:
+          type: string
+          description: "에이전트 이름"
+          example: "작업실"
         agentVersion:
           type: string
           description: "에이전트 버전"
@@ -611,12 +676,17 @@ components:
             type: object
             description: "개별 파일 전송 진행 정보"
             required:
+              - peerId
               - name
               - size
               - transferredBytes
               - progress
               - speed
             properties:
+              peerId:
+                type: string
+                description: "피어 고유 ID"
+                example: "peer_xyz789"
               name:
                 type: string
                 description: "파일 이름"
@@ -769,6 +839,39 @@ components:
           minItems: 1
           items:
             $ref: "#/components/schemas/FileInfo"
+
+    # ──────────────────────────────────────────────
+    # 11. PostPeersRequest — POST /peers 요청
+    # ──────────────────────────────────────────────
+    PostPeersRequest:
+      type: object
+      description: "특정 피어와 연결 요청"
+      required:
+        - files
+      properties:
+        peerId:
+          type: string
+          description: "피어 고유 ID"
+          example: "peer_xyz789"
+        peerMultiAddress:
+          type: string
+          description: "상대방 주소"
+          example: "127.0.0.1/::/..."
+
+    # ──────────────────────────────────────────────
+    # 11. PatchTransferRequest — PATCH /transfer/progress 요청
+    # ──────────────────────────────────────────────
+    PatchTransferRequest:
+      type: object
+      description: "전송 상태 변경"
+      required:
+        - speed
+      properties:
+        speed:
+          type: integer
+          description: "전송 제한속도 (byte)"
+          example: 1000
+          
 
     # ──────────────────────────────────────────────
     # 12. SendDataResponse — POST /peers/{peerId} 응답
