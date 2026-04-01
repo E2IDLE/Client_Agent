@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"Client_Agent/pkg/handler/peers"
 	"Client_Agent/pkg/handler/status"
 	"Client_Agent/pkg/middleware"
 	"Client_Agent/pkg/service"
@@ -24,4 +25,8 @@ func registerAPIRoutes(router *gin.Engine, sessions *session.Store) {
 	statusSvc := service.NewStatusService(sessions)
 	statusH := status.NewStatusHandler(statusSvc)
 	statusH.RegisterRoutes(&router.RouterGroup)
+
+	P2PSvc := service.NewP2PService(sessions)
+	peersH := peers.NewPeersHandler(P2PSvc)
+	peersH.RegisterRoutes(&router.RouterGroup)
 }
