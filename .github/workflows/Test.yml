@@ -44,3 +44,5 @@ jobs:
                 echo "에러 발생: $STATUS"
                 exit 1
             fi
+      - name: Test step
+        run: echo "develop"
