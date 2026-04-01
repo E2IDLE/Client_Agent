@@ -2,18 +2,22 @@ name: OnPush
 
 on:
   push:
-    branches: [ master release ]
+    branches: [ master, release ]
 
 jobs:
   notify-parent:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
       - name: Generate DIRECTP2P_SECRET_KEY pem key file
         run: echo "${{ secrets.DIRECTP2P_SECRET_KEY }}" > DIRECTP2P_SECRET_KEY.pem
       - name: Generate Github JWT
         # This script will set GITHUB_JWT environment variable
         # APP_ID=3210791
-        run: ./.github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
+        run: |
+          chmod +x ./.github/scripts/GenerateGithubJWT.sh
+          ./.github/scripts/GenerateGithubJWT.sh 3210791 DIRECTP2P_SECRET_KEY.pem
         shell: bash
       - name: Get organization installation
         id: install_raw
@@ -24,7 +28,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/orgs/E2IDLE/installation)
 
-          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+          echo "json="$RESPONSE"" >> $GITHUB_OUTPUT
       - name: Extract installation id
         id: install
         run: echo "id=${{ fromJson(steps.install_raw.outputs.json).id }}" >> $GITHUB_OUTPUT
@@ -37,7 +41,7 @@ jobs:
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/app/installations/${{ steps.install.outputs.id }}/access_tokens)
 
-          echo "json=$RESPONSE" >> $GITHUB_OUTPUT
+          echo "json="$RESPONSE"" >> $GITHUB_OUTPUT
       - name: Extract token
         id: token
         run: echo "INSTALLATION_TOKEN=${{ fromJson(steps.token_raw.outputs.json).token }}" >> $GITHUB_ENV
@@ -48,4 +52,16 @@ jobs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2026-03-10" \
             https://api.github.com/repos/E2IDLE/DirectP2P/dispatches \
-            -d '{"event_type":"submodule_updated"}'
+            -d '{
+            "event_type":"submodule_updated",
+              "client_payload": {
+                "branch": "${{ github.ref_name }}"
+              }
+            }'
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+      - name: Build
+        run: go build -o build/ cmd/client/main.go
