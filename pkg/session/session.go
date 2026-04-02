@@ -373,7 +373,7 @@ func NewStore() *Store {
 			PeerID:        peerId.String(),
 			MultiAddress:  multiAddress,
 			NATType:       "",
-			ConnectedPeer: []dtos.Peer{{Nickname: "", Address: "", ConnectionType: "", RTT: 0}},
+			ConnectedPeer: []dtos.Peer{},
 		},
 		Host:           h,
 		SendingFiles:   make(map[string]*SendingFile),
