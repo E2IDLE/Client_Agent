@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync/atomic"
 
 	"github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
+	"github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/pion/stun/v3"
@@ -24,9 +26,33 @@ type AgentStatus struct {
 	ConnectedPeer []dtos.Peer `json:"connectedPeer"`
 }
 
+type CountingStream struct {
+	network.Stream
+	bytesSent     int64
+	bytesReceived int64
+}
+
+func (s *CountingStream) Write(p []byte) (int, error) {
+	n, err := s.Stream.Write(p)
+	atomic.AddInt64(&s.bytesSent, int64(n))
+	return n, err
+}
+
+func (s *CountingStream) Read(p []byte) (int, error) {
+	n, err := s.Stream.Read(p)
+	atomic.AddInt64(&s.bytesReceived, int64(n))
+	return n, err
+}
+
+type SendingFile struct {
+	Name   string
+	Stream CountingStream
+}
+
 type Store struct {
-	Status AgentStatus
-	Host   host.Host
+	Status       AgentStatus
+	Host         host.Host
+	SendingFiles []SendingFile
 }
 
 // getPublicAddrViaSTUN은 STUN 서버를 통해 공인 IP와 Port를 가져옵니다.
