@@ -1,8 +1,9 @@
 package dtos
 
 type Peer struct {
+	Id             string
 	Nickname       string `json:"nickname"`
 	Address        string `json:"address"`
 	ConnectionType string `json:"connectionType"`
-	RTT            int64  `json:"rtt"`
+	RTT            uint64 `json:"rtt"`
 }

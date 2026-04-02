@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	PathPeers = "/peers"
+	PathPeers     = "/peers"
+	PathPeersByID = "/peers/:id"
 )
 
 type PeersHandler struct {
@@ -20,5 +21,6 @@ func NewPeersHandler(svc *service.P2PService) *PeersHandler {
 
 func (h *PeersHandler) RegisterRoutes(rg *gin.RouterGroup) {
 	rg.GET(PathPeers, h.Get)
-	rg.POST(PathPeers, h.Post)
+	rg.POST(PathPeers, h.Connect)
+	rg.POST(PathPeersByID, h.Post)
 }

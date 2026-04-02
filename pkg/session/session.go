@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"sync"
 	"sync/atomic"
 
 	"github.com/libp2p/go-libp2p"
@@ -49,10 +50,19 @@ type SendingFile struct {
 	Stream CountingStream
 }
 
+type LibP2PConn struct {
+	Conn   network.Conn // libp2p 트랜스포트 커넥션
+	PeerID peer.ID
+	StopCh chan struct{}
+}
+
 type Store struct {
-	Status       AgentStatus
-	Host         host.Host
-	SendingFiles []SendingFile
+	Status             AgentStatus
+	Host               host.Host
+	SendingFilesByUser map[string]SendingFile
+	// 홀펀칭으로 수립된 직접 연결 보관
+	Connections   map[string]*LibP2PConn // key: peer.ID.String()
+	ConnectionsMu sync.RWMutex
 }
 
 // getPublicAddrViaSTUN은 STUN 서버를 통해 공인 IP와 Port를 가져옵니다.
@@ -142,6 +152,18 @@ func NewStore() *Store {
 	}
 
 	log.Printf("[INFO] public multiaddr: %s", multiAddress)
+	// 스트림 핸들러 등록
+	h.SetStreamHandler("/libp2p/keepalive", func(s network.Stream) {
+		go func() {
+			defer s.Reset()
+			buf := make([]byte, 1)
+			for {
+				if _, err := s.Read(buf); err != nil {
+					return // 연결 끊기면 자동 종료
+				}
+			}
+		}()
+	})
 
 	return &Store{
 		Status: AgentStatus{
@@ -153,6 +175,8 @@ func NewStore() *Store {
 			NATType:       "",
 			ConnectedPeer: []dtos.Peer{{Nickname: "", Address: "", ConnectionType: "", RTT: 0}},
 		},
-		Host: h,
+		Host:               h,
+		SendingFilesByUser: make(map[string]SendingFile),
+		Connections:        make(map[string]*LibP2PConn),
 	}
 }

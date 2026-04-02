@@ -614,16 +614,11 @@ components:
           minimum: 0
           maximum: 100
           example: 0.5
-        publicIp:
+        multiAddress:
           type: string
           nullable: true
-          description: "피어의 공인 IP (알 수 없으면 null)"
-          example: "198.51.100.22"
-        publicPort:
-          type: integer
-          nullable: true
-          description: "피어의 공인 포트 (알 수 없으면 null)"
-          example: 54321
+          description: "피어의 multi address"
+          example: "ip4/198.51.100.22/..."
 
     # ──────────────────────────────────────────────
     # 11. SendDataRequest — POST /peers/{peerId} 요청
