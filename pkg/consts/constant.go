@@ -11,6 +11,8 @@ const (
 	TraceIDHeader = "X-Trace-ID"
 	CtxTraceID    = ContextKey("trace_id")
 
+	Version = "0.0.0"
+
 	KeyECode   = "code"
 	KeyMessage = "message"
 	KeyDetail  = "detail"
