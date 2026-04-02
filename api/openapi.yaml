@@ -23,6 +23,8 @@ tags:
     description: "연결된 피어 관리 및 데이터 전송"
   - name: "로그"
     description: "에이전트 로그 조회"
+  - name: "편집"
+    description: "영상 컷 편집"
 
 paths:
   /status:
@@ -135,7 +137,6 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
-
   /transfer/cancel:
     post:
       tags:
@@ -212,8 +213,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
-
 
   /peers/{peerId}:
     post:
@@ -330,6 +329,133 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  # ──────────────────────────────────────────────
+  # /edit — 영상 컷 편집
+  # ──────────────────────────────────────────────
+  /edit:
+    post:
+      tags:
+        - "편집"
+      summary: "영상 컷 편집 작업 요청"
+      description: |
+        영상 파일에 대해 컷 편집 작업을 요청합니다.
+        `segments` 배열에 잘라낼 구간(시작/끝 타임스탬프 페어)을 순서대로 전달하면,
+        해당 구간들이 순서대로 이어붙여진 결과 영상을 생성합니다.
+        타임스탬프는 초 단위 소수점 형식(예: 12.5)으로 전달합니다.
+      operationId: "postEdit"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditRequest"
+      responses:
+        "202":
+          description: "편집 작업 요청 수락됨"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditAcceptedResponse"
+        "400":
+          description: "잘못된 요청 (필수 필드 누락, 타임스탬프 범위 오류 등)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: "원본 영상 파일을 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 편집 작업이 진행 중임"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /edit/{editId}:
+    get:
+      tags:
+        - "편집"
+      summary: "편집 작업 진행 상황 조회"
+      description: "editId에 해당하는 편집 작업의 현재 진행 상황과 결과를 조회합니다."
+      operationId: "getEditStatus"
+      parameters:
+        - name: editId
+          in: path
+          required: true
+          description: "편집 작업 ID"
+          schema:
+            type: string
+            example: "edit_abc123"
+      responses:
+        "200":
+          description: "편집 작업 상태 조회 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditStatusResponse"
+        "404":
+          description: "해당 편집 작업을 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    delete:
+      tags:
+        - "편집"
+      summary: "편집 작업 취소"
+      description: "진행 중인 편집 작업을 취소합니다. 이미 완료된 작업은 취소할 수 없습니다."
+      operationId: "deleteEdit"
+      parameters:
+        - name: editId
+          in: path
+          required: true
+          description: "취소할 편집 작업 ID"
+          schema:
+            type: string
+            example: "edit_abc123"
+      responses:
+        "200":
+          description: "편집 작업 취소 성공"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditCancelResponse"
+        "404":
+          description: "해당 편집 작업을 찾을 수 없음"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "이미 완료된 작업이므로 취소 불가"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: "에이전트 내부 오류"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     # ──────────────────────────────────────────────
@@ -405,7 +531,7 @@ components:
                 description: "왕복 지연 시간 (밀리초)"
 
     # ──────────────────────────────────────────────
-    # 3. PatchAgentStatusRequest — PATCH /status 요청
+    # 2. PatchAgentStatusRequest — PATCH /status 요청
     # ──────────────────────────────────────────────
     PatchAgentStatusRequest:
       type: object
@@ -418,7 +544,7 @@ components:
           description: "이름"
 
     # ──────────────────────────────────────────────
-    # 5. FileInfo — StartSessionRequest, SendDataRequest에서 재사용
+    # 3. FileInfo — SendDataRequest에서 재사용
     # ──────────────────────────────────────────────
     FileInfo:
       type: object
@@ -447,7 +573,7 @@ components:
           example: "application/pdf"
 
     # ──────────────────────────────────────────────
-    # 8. TransferProgress — GET /transfer/progress 응답
+    # 4. TransferProgress — GET /transfer/progress 응답
     # ──────────────────────────────────────────────
     TransferProgress:
       type: object
@@ -550,7 +676,7 @@ components:
           description: "전송 시작 시각 (ISO 8601, 미시작 시 null)"
 
     # ──────────────────────────────────────────────
-    # 9. CancelTransferResponse — POST /transfer/cancel 응답
+    # 5. CancelTransferResponse — POST /transfer/cancel 응답
     # ──────────────────────────────────────────────
     CancelTransferResponse:
       type: object
@@ -570,7 +696,7 @@ components:
           example: 5242880
 
     # ──────────────────────────────────────────────
-    # 10. PeerInfo — GET /peers 응답 배열 항목
+    # 6. PeerInfo — GET /peers 응답 배열 항목
     # ──────────────────────────────────────────────
     PeerInfo:
       type: object
@@ -621,7 +747,7 @@ components:
           example: "ip4/198.51.100.22/..."
 
     # ──────────────────────────────────────────────
-    # 11. SendDataRequest — POST /peers/{peerId} 요청
+    # 7. SendDataRequest — POST /peers/{peerId} 요청
     # ──────────────────────────────────────────────
     SendDataRequest:
       type: object
@@ -637,13 +763,11 @@ components:
             $ref: "#/components/schemas/FileInfo"
 
     # ──────────────────────────────────────────────
-    # 11. PostPeersRequest — POST /peers 요청
+    # 8. PostPeersRequest — POST /peers 요청
     # ──────────────────────────────────────────────
     PostPeersRequest:
       type: object
       description: "특정 피어와 연결 요청"
-      required:
-        - files
       properties:
         peerId:
           type: string
@@ -655,7 +779,7 @@ components:
           example: "127.0.0.1/::/..."
 
     # ──────────────────────────────────────────────
-    # 11. PatchTransferRequest — PATCH /transfer/progress 요청
+    # 9. PatchTransferRequest — PATCH /transfer/progress 요청
     # ──────────────────────────────────────────────
     PatchTransferRequest:
       type: object
@@ -667,10 +791,9 @@ components:
           type: integer
           description: "전송 제한속도 (byte)"
           example: 1000
-          
 
     # ──────────────────────────────────────────────
-    # 12. SendDataResponse — POST /peers/{peerId} 응답
+    # 10. SendDataResponse — POST /peers/{peerId} 응답
     # ──────────────────────────────────────────────
     SendDataResponse:
       type: object
@@ -689,7 +812,7 @@ components:
           example: "전송 요청이 수락되었습니다."
 
     # ──────────────────────────────────────────────
-    # 13. LogResponse — GET /logs 응답
+    # 11. LogResponse — GET /logs 응답
     # ──────────────────────────────────────────────
     LogResponse:
       type: object
@@ -746,7 +869,242 @@ components:
           example: 250
 
     # ──────────────────────────────────────────────
-    # 14. ErrorResponse — 모든 에러 응답
+    # 12. EditSegment — 컷 편집 구간 (시작/끝 타임스탬프 페어)
+    # ──────────────────────────────────────────────
+    EditSegment:
+      type: object
+      description: |
+        컷 편집 구간 하나를 나타냅니다.
+        start ~ end 구간의 영상이 결과물에 포함됩니다.
+        segments 배열의 인덱스 순서가 곧 결과 영상의 이어붙임 순서입니다.
+      required:
+        - order
+        - start
+        - end
+      properties:
+        order:
+          type: integer
+          description: "구간의 순서 (1부터 시작, 결과 영상에서 이어붙여지는 순서)"
+          minimum: 1
+          example: 1
+        start:
+          type: number
+          format: double
+          description: "구간 시작 타임스탬프 (초, 소수점 허용)"
+          minimum: 0
+          example: 0.0
+        end:
+          type: number
+          format: double
+          description: "구간 종료 타임스탬프 (초, 소수점 허용). start보다 커야 합니다."
+          minimum: 0
+          example: 12.5
+        label:
+          type: string
+          nullable: true
+          description: "구간에 대한 선택적 레이블 (식별 목적, 처리에 영향 없음)"
+          example: "오프닝"
+
+    # ──────────────────────────────────────────────
+    # 13. EditRequest — POST /edit 요청
+    # ──────────────────────────────────────────────
+    EditRequest:
+      type: object
+      description: "영상 컷 편집 요청"
+      required:
+        - sourcePath
+        - outputPath
+        - segments
+      properties:
+        sourcePath:
+          type: string
+          description: "원본 영상 파일의 로컬 경로"
+          example: "/home/user/videos/raw.mp4"
+        outputPath:
+          type: string
+          description: "편집 결과 영상이 저장될 로컬 경로"
+          example: "/home/user/videos/edited.mp4"
+        segments:
+          type: array
+          description: |
+            편집할 구간 목록. order 필드 기준으로 오름차순 정렬되어 결과 영상에 이어붙여집니다.
+            최소 1개 이상이어야 하며, 각 구간의 start < end 조건을 만족해야 합니다.
+            구간끼리 시간이 겹쳐도 되며, 원본의 같은 구간을 여러 번 포함할 수 있습니다.
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/EditSegment"
+        outputFormat:
+          type: string
+          nullable: true
+          description: "출력 파일 형식 (미지정 시 원본 형식 유지)"
+          enum:
+            - mp4
+            - mkv
+            - mov
+            - avi
+            - webm
+          example: "mp4"
+        reEncoding:
+          type: boolean
+          nullable: true
+          description: |
+            재인코딩 여부. false이면 스트림 복사 방식으로 빠르게 처리되지만
+            키프레임 경계에서 약간의 오차가 생길 수 있습니다.
+            true이면 정확한 컷 편집이 가능하나 처리 시간이 길어집니다. (기본값: false)
+          default: false
+          example: false
+
+    # ──────────────────────────────────────────────
+    # 14. EditAcceptedResponse — POST /edit 202 응답
+    # ──────────────────────────────────────────────
+    EditAcceptedResponse:
+      type: object
+      description: "편집 작업 수락 응답"
+      required:
+        - editId
+        - status
+        - message
+        - segmentCount
+      properties:
+        editId:
+          type: string
+          description: "발급된 편집 작업 ID (진행 상황 조회 및 취소에 사용)"
+          example: "edit_abc123"
+        status:
+          type: string
+          description: "편집 작업 초기 상태"
+          enum:
+            - pending
+          example: "pending"
+        message:
+          type: string
+          description: "응답 메시지"
+          example: "편집 작업이 요청되었습니다."
+        segmentCount:
+          type: integer
+          description: "처리될 구간 수"
+          example: 3
+        estimatedDuration:
+          type: number
+          format: double
+          nullable: true
+          description: "결과 영상의 예상 총 길이 (초, 산출 불가 시 null)"
+          example: 47.3
+
+    # ──────────────────────────────────────────────
+    # 15. EditStatusResponse — GET /edit/{editId} 응답
+    # ──────────────────────────────────────────────
+    EditStatusResponse:
+      type: object
+      description: "편집 작업 진행 상황 응답"
+      required:
+        - editId
+        - status
+        - sourcePath
+        - outputPath
+        - segments
+        - progress
+      properties:
+        editId:
+          type: string
+          description: "편집 작업 ID"
+          example: "edit_abc123"
+        status:
+          type: string
+          description: "편집 작업 현재 상태"
+          enum:
+            - pending
+            - processing
+            - completed
+            - failed
+            - cancelled
+          example: "processing"
+        sourcePath:
+          type: string
+          description: "원본 영상 파일 경로"
+          example: "/home/user/videos/raw.mp4"
+        outputPath:
+          type: string
+          description: "결과 영상 파일 경로"
+          example: "/home/user/videos/edited.mp4"
+        segments:
+          type: array
+          description: "요청된 편집 구간 목록"
+          items:
+            $ref: "#/components/schemas/EditSegment"
+        progress:
+          type: number
+          format: double
+          description: "편집 진행률 (0∼100)"
+          minimum: 0
+          maximum: 100
+          example: 45.0
+        currentSegmentOrder:
+          type: integer
+          nullable: true
+          description: "현재 처리 중인 구간의 order 값 (처리 전/완료 시 null)"
+          example: 2
+        startedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "편집 작업 시작 시각 (ISO 8601, 미시작 시 null)"
+          example: "2024-06-01T12:00:00Z"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: "편집 작업 완료 시각 (ISO 8601, 미완료 시 null)"
+          example: null
+        eta:
+          type: integer
+          nullable: true
+          description: "예상 남은 시간 (초, 산출 불가 시 null)"
+          example: 30
+        errorDetail:
+          type: string
+          nullable: true
+          description: "실패 시 오류 상세 메시지 (정상 시 null)"
+          example: null
+        outputSize:
+          type: integer
+          format: int64
+          nullable: true
+          description: "완료된 결과 영상 파일 크기 (바이트, 미완료 시 null)"
+          example: null
+
+    # ──────────────────────────────────────────────
+    # 16. EditCancelResponse — DELETE /edit/{editId} 응답
+    # ──────────────────────────────────────────────
+    EditCancelResponse:
+      type: object
+      description: "편집 작업 취소 응답"
+      required:
+        - editId
+        - cancelled
+        - message
+      properties:
+        editId:
+          type: string
+          description: "취소된 편집 작업 ID"
+          example: "edit_abc123"
+        cancelled:
+          type: boolean
+          description: "취소 성공 여부"
+          example: true
+        message:
+          type: string
+          description: "응답 메시지"
+          example: "편집 작업이 취소되었습니다."
+        progressAtCancel:
+          type: number
+          format: double
+          nullable: true
+          description: "취소 시점의 진행률 (0∼100, 확인 불가 시 null)"
+          example: 45.0
+
+    # ──────────────────────────────────────────────
+    # 17. ErrorResponse — 모든 에러 응답
     # ──────────────────────────────────────────────
     ErrorResponse:
       type: object
@@ -768,7 +1126,7 @@ components:
           example: "sessionId: sess_abc123에 해당하는 세션이 존재하지 않습니다."
 
     # ──────────────────────────────────────────────
-    # 15. ErrorCode — ErrorResponse에서 $ref 참조
+    # 18. ErrorCode — ErrorResponse에서 $ref 참조
     # ──────────────────────────────────────────────
     ErrorCode:
       type: string
@@ -786,6 +1144,12 @@ components:
         - E5001: NAT 탐지 실패
         - E5002: 홀펀칭 실패
         - E6001: 에이전트 내부 오류
+        - E7001: 편집 작업을 찾을 수 없음
+        - E7002: 편집 작업이 이미 진행 중
+        - E7003: 원본 영상 파일을 찾을 수 없음
+        - E7004: 유효하지 않은 타임스탬프 (start >= end, 또는 범위 초과)
+        - E7005: 편집 처리 중 오류 발생
+        - E7006: 이미 완료된 작업으로 취소 불가
       enum:
         - E1001
         - E1002
@@ -799,3 +1163,9 @@ components:
         - E5001
         - E5002
         - E6001
+        - E7001
+        - E7002
+        - E7003
+        - E7004
+        - E7005
+        - E7006
