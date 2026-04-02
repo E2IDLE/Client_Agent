@@ -13,11 +13,16 @@ const (
 
 	Version = "0.0.0"
 
+	FileTransferProtocol = "/file-transfer/1.0.0"
+	FileSaveDir          = "."
+
 	KeyECode   = "code"
 	KeyMessage = "message"
 	KeyDetail  = "detail"
 
 	ErrCodeInvalidParam = "E1001"
+	ErrCodeNotFound     = "E3001"
+	ErrCodeInternal     = "E6001"
 
 	MsgInvalidRequest      = "잘못된 요청 파라미터"
 	MsgTooManyRequests     = "too many requests"
