@@ -39,6 +39,7 @@ type AgentStatus struct {
 	AgentVersion  string      `json:"agentVersion"`
 	Status        string      `json:"status"`
 	Uptime        string      `json:"uptime"`
+	PeerID        string      `json:"peerId"`
 	MultiAddress  string      `json:"multiAddress"`
 	NATType       string      `json:"natType"`
 	ConnectedPeer []dtos.Peer `json:"connectedPeer"`
@@ -342,7 +343,8 @@ func NewStore() *Store {
 	}
 
 	// ── 3. Multiaddr 생성 (/ip4/IP/tcp/PORT/p2p/PeerID) ──────────────────────
-	multiAddress, err := buildMultiAddress(ip, port, h.ID())
+	peerId := h.ID()
+	multiAddress, err := buildMultiAddress(ip, port, peerId)
 	if err != nil {
 		log.Printf("[WARN] failed to build multiaddr: %v", err)
 	}
@@ -368,6 +370,7 @@ func NewStore() *Store {
 			AgentVersion:  consts.Version,
 			Status:        "",
 			Uptime:        "",
+			PeerID:        peerId.String(),
 			MultiAddress:  multiAddress,
 			NATType:       "",
 			ConnectedPeer: []dtos.Peer{{Nickname: "", Address: "", ConnectionType: "", RTT: 0}},

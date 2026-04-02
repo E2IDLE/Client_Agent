@@ -5,6 +5,7 @@ type AgentStatusResponse struct {
 	AgentVersion  string `json:"agentVersion"`
 	Status        string `json:"status"`
 	Uptime        string `json:"uptime"`
+	PeerID        string `json:"peerId"`
 	MultiAddress  string `json:"multiAddress"`
 	NATType       string `json:"natType"`
 	ConnectedPeer []Peer `json:"connectedPeer"`

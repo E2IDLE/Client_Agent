@@ -19,6 +19,7 @@ func (h *StatusService) GetStatus() dtos.AgentStatusResponse {
 		AgentVersion:  h.Sessions.Status.AgentVersion,
 		Status:        h.Sessions.Status.Status,
 		Uptime:        h.Sessions.Status.Uptime,
+		PeerID:        h.Sessions.Status.PeerID,
 		MultiAddress:  h.Sessions.Status.MultiAddress,
 		NATType:       h.Sessions.Status.NATType,
 		ConnectedPeer: h.Sessions.Status.ConnectedPeer,
